@@ -16,7 +16,7 @@ const handleDbError = (error) => {
         };
     }
     return {
-        message: "Database error occurred",
+        message: `Database error occurred: ${error.message}`,
         status: 500
     };
 };

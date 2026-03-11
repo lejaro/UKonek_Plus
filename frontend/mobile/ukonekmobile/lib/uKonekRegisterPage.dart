@@ -107,6 +107,7 @@ class _uKonekRegisterPageState extends State<uKonekRegisterPage> {
         dobController.clear();
         ageController.clear();
       });
+      Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Registration failed: ${response.body}')),
@@ -152,8 +153,8 @@ class _uKonekRegisterPageState extends State<uKonekRegisterPage> {
                   child: Column(
                     children: [
 
-                      buildTextField("First Name", firstNameController),
-                      buildTextField("Last Name", lastNameController),
+                      buildTextField("First Name", firstNameController, isRequired: true),
+                      buildTextField("Last Name", lastNameController, isRequired: true),
                       buildTextField("Middle Initial", middleInitialController),
 
                       // DATE OF BIRTH
@@ -163,6 +164,7 @@ class _uKonekRegisterPageState extends State<uKonekRegisterPage> {
                           child: buildTextField(
                             "Date of Birth",
                             dobController,
+                            isRequired: true,
                           ),
                         ),
                       ),
@@ -242,13 +244,13 @@ class _uKonekRegisterPageState extends State<uKonekRegisterPage> {
                         ],
                       ),
 
-                      buildTextField("Email", emailController),
+                      buildTextField("Email", emailController, isRequired: true),
                       buildTextField("Complete Address", addressController),
 
                       const SizedBox(height: 20),
 
-                      buildTextField("Password", passwordController, isPassword: true),
-                      buildTextField("Confirm Password", confirmPasswordController, isPassword: true),
+                      buildTextField("Password", passwordController, isPassword: true, isRequired: true),
+                      buildTextField("Confirm Password", confirmPasswordController, isPassword: true, isRequired: true),
 
                       const SizedBox(height: 20),
 
@@ -337,19 +339,19 @@ class _uKonekRegisterPageState extends State<uKonekRegisterPage> {
   }
 
   Widget buildTextField(String label, TextEditingController controller,
-      {bool enabled = true, bool isPassword = false}) {
+      {bool enabled = true, bool isPassword = false, bool isRequired = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: controller,
         enabled: enabled,
         obscureText: isPassword,
-        validator: (value) {
+        validator: isRequired ? (value) {
           if (value == null || value.isEmpty) {
             return "$label is required";
           }
           return null;
-        },
+        } : null,
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
