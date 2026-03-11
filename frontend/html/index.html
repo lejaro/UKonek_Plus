@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>U-Konek+ — Medical Personnel System</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="side" role="side">
+            <img src="#" alt="">
+            <div class="SiteName">
+                <h1>U-Konek</h1>
+                <h2>+</h2>
+            </div>
+            <h5>A comprehensive healthcare management system designed for modern medical facilities. Streamline
+                operations, manage patients, and enhance care.</h5>
+            <img src="#" alt="">
+            <h5>Trusted by 500+ professionals</h5>
+        </div>
+        <div class="card" role="main">
+            <div class="brand">
+                <h1 id="panel-title">Welcome Back</h1>
+                <h4 id="panel-desc">Enter your credentials to access the portal</h4>
+            </div>
+
+            <div class="tabs" role="tablist" aria-label="Authentication tabs">
+                <button id="tab-login" class="tab active" role="tab" aria-selected="true">Login</button>
+                <button id="tab-register" class="tab" role="tab" aria-selected="false">Register</button>
+                <button id="tab-reset" class="tab" role="tab" aria-selected="false">Reset</button>
+            </div>
+
+            <!-- Login Panel -->
+            <div id="login-panel">
+                <form id="login-form" novalidate>
+                    <div class="field">
+                        <label class="inputLabel" for="role">Role</label>
+                        <select id="role" required>
+                            <option value="">Select role</option>
+                            <option value="admin">Admin</option>
+                            <option value="staff">Staff</option>
+                            <option value="doctor">Doctor</option>
+                            <option value="nurse">Nurse</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label class="inputLabel" for="username">Username</label>
+                        <input id="username" type="text" placeholder="Enter your username" required />
+                    </div>
+
+                    <div class="field">
+                        <label class="inputLabel" for="password">Password</label>
+                        <input id="password" type="password" placeholder="Enter your password" required />
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit" class="btn">SIGN IN</button>
+                    </div>
+                    <div id="login-error" class="note" aria-live="polite" style="display:none"></div>
+                </form>
+            </div>
+
+            <!-- Register Panel -->
+            <div id="register-panel" style="display:none">
+                <form id="register-form" novalidate>
+                    <div class="field">
+                        <label class="inputLabel" for="reg-username">Username</label>
+                        <input id="reg-username" type="text" placeholder="Choose a username" required />
+                    </div>
+
+                    <div class="field">
+                        <label class="inputLabel" for="reg-employee-id">Employee ID</label>
+                        <input id="reg-employee-id" type="text" placeholder="e.g. EMP-12345" required />
+                    </div>
+
+                    <div class="field">
+                        <label class="inputLabel" for="reg-role">Role</label>
+                        <select id="reg-role" required>
+                            <option value="">Select role</option>
+                            <option value="doctor">Doctor</option>
+                            <option value="nurse">Nurse</option>
+                            <option value="staff">Staff</option>
+                        </select>
+                    </div>
+
+                    <!-- Doctor Specific Fields -->
+                    <div id="doctor-fields" style="display:none">
+                        <div class="field">
+                            <label class="inputLabel" for="reg-specialization">Specialization</label>
+                            <input id="reg-specialization" type="text" placeholder="e.g. Cardiology" />
+                        </div>
+                        <div class="field">
+                            <label class="inputLabel" for="reg-schedule">Schedule</label>
+                            <input id="reg-schedule" type="text" placeholder="e.g. Mon-Fri, 8AM-5PM" />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="inputLabel" for="reg-password">Password</label>
+                        <input id="reg-password" type="password" placeholder="Min. 6 characters" required />
+                    </div>
+
+                    <div class="field">
+                        <label class="inputLabel" for="reg-confirm-password">Confirm Password</label>
+                        <input id="reg-confirm-password" type="password" placeholder="Repeat your password" required />
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit" class="btn">REGISTER AS PERSONNEL</button>
+                    </div>
+                    <div id="register-error" class="note" aria-live="polite" style="display:none"></div>
+                    <div id="register-success" class="note" style="display:none; color: green;"></div>
+                </form>
+            </div>
+
+            <!-- Reset Panel -->
+            <div id="reset-panel" style="display:none">
+                <form id="reset-form" novalidate>
+                    <h1 class="reminders">Enter your email address and we'll send you a link to reset your password.
+                    </h1>
+                    <div class="field">
+                        <label class="inputLabel" for="reset-email">Email</label>
+                        <input id="reset-email" type="email" placeholder="your-email@example.com" required />
+                    </div>
+                    <div class="actions">
+                        <button class="btn" type="submit">Send reset link</button>
+                    </div>
+                    <div id="reset-msg" class="small" aria-live="polite" style="display:none"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="../js/script.js"></script>
+</body>
+
+</html>

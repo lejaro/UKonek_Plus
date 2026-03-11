@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>U-Konek+ — Dashboard</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-row">
+        <div class="logo">
+        </div>
+        <h3 class="brand-text">U-Konek+</h3>
+        <div class="control-btns">
+          <button id="burger" class="icon-btn" aria-label="Toggle sidebar">☰</button>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Main navigation">
+        <a href="#" class="nav-item" data-section="dashboard"><span class="icon">🏠</span><span
+            class="label">Dashboard</span></a>
+        <div class="nav-item dropdown">
+          <button class="nav-btn" aria-label="Users menu"><span class="icon">👥</span><span
+              class="label">Users</span><span class="arrow">▼</span></button>
+          <div class="dropdown-menu hidden">
+            <a href="#" class="dropdown-item" data-section="account-management">Account Management</a>
+            <a href="#" class="dropdown-item" data-section="account-registration">Account Registration</a>
+          </div>
+        </div>
+        <a href="#" class="nav-item" data-section="reports"><span class="icon">📄</span><span
+            class="label">Reports</span></a>
+        <a href="#" class="nav-item" data-section="settings"><span class="icon">⚙️</span><span
+            class="label">Settings</span></a>
+      </nav>
+    </aside>
+
+    <main class="mainview">
+      <div class="topbar">
+        <div class="topbar-left">
+          <div class="left-controls">
+            <div class="search-wrap">
+              <input id="search-input" class="search-input" type="search" placeholder="Search..." aria-label="Search" />
+            </div>
+          </div>
+          <div class="right-controls">
+            <button id="notif-btn" class="icon-btn" aria-label="Notifications">🔔</button>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div class="user-info">
+            <div class="user-name">John Doe</div>
+            <div class="user-pos">Administrator</div>
+          </div>
+          <div class="profile-img" title="Profile"></div>
+          <button id="logout-btn" class="icon-btn" title="Logout"
+            style="margin-left: 10px; color: #dc2626; font-weight: bold;">Logout</button>
+        </div>
+      </div>
+
+      <section class="section-top" id="dashboard-section">
+        <h2>Medyo Dashboard</h2>
+      </section>
+
+      <section id="users-section" class="section-top hidden">
+        <div id="account-management" class="hidden">
+          <h2>Account Management</h2>
+
+          <div class="mt-20 p-20 bg-light rounded">
+            <div class="flex flex-between align-center mb-15">
+              <div class="tabs">
+                <button id="tab-registered" class="tab active">Registered Accounts</button>
+                <button id="tab-pending" class="tab">Pending Registrations</button>
+              </div>
+              <div>
+                <label class="filter-label">Filter by Role:</label>
+                <select id="role-filter" class="filter-select">
+                  <option value="">All Roles</option>
+                  <option value="admin">Admin</option>
+                  <option value="staff">Staff</option>
+                  <option value="doctor">Doctor</option>
+                </select>
+              </div>
+            </div>
+            <div id="registered-pane">
+              <table id="accounts-table" class="accounts-table">
+                <thead>
+                  <tr class="table-header-row">
+                    <th class="table-header-cell">Username</th>
+                    <th class="table-header-cell">Employee ID</th>
+                    <th class="table-header-cell">Role</th>
+                    <th class="table-header-cell">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="accounts-tbody">
+                  <tr class="account-row" data-role="admin">
+                    <td class="table-cell">John Doe</td>
+                    <td class="table-cell">john@example.com</td>
+                    <td class="table-cell">Admin</td>
+                    <td class="table-cell"><span class="badge-active">Active</span></td>
+                  </tr>
+                  <tr class="account-row" data-role="doctor">
+                    <td class="table-cell">Jane Smith</td>
+                    <td class="table-cell">jane@example.com</td>
+                    <td class="table-cell">Doctor</td>
+                    <td class="table-cell"><span class="badge-active">Active</span></td>
+                  </tr>
+                  <tr class="account-row" data-role="staff">
+                    <td class="table-cell">Michael Johnson</td>
+                    <td class="table-cell">michael@example.com</td>
+                    <td class="table-cell">Staff</td>
+                    <td class="table-cell"><span class="badge-active">Active</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="pending-pane" class="hidden">
+              <h3 class="mb-12">Pending Registrations</h3>
+              <table id="pending-table" class="accounts-table">
+                <thead>
+                  <tr class="table-header-row">
+                    <th class="table-header-cell">Name</th>
+                    <th class="table-header-cell">Email</th>
+                    <th class="table-header-cell">Role</th>
+                    <th class="table-header-cell">Submitted</th>
+                  </tr>
+                </thead>
+                <tbody id="pending-tbody">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div id="account-registration" class="hidden">
+          <h2>Account Registration</h2>
+          <div class="flex justify-center section-top">
+            <form id="registration-form" class="registration-box" novalidate>
+              <div class="field">
+                <label class="inputLabel" for="reg-username-dash">Username</label>
+                <input id="reg-username-dash" type="text" placeholder="Choose a username" required />
+                <div id="err-reg-username" class="field-error note hidden"></div>
+              </div>
+
+              <div class="field">
+                <label class="inputLabel" for="reg-employee-id-dash">Employee ID</label>
+                <input id="reg-employee-id-dash" type="text" placeholder="e.g. EMP-12345" required />
+                <div id="err-reg-employee" class="field-error note hidden"></div>
+              </div>
+
+              <div class="field">
+                <label class="inputLabel" for="reg-role-dash">Role</label>
+                <select id="reg-role-dash" required>
+                  <option value="">Select role</option>
+                  <option value="doctor">Doctor</option>
+                  <option value="nurse">Nurse</option>
+                  <option value="staff">Staff</option>
+                </select>
+              </div>
+
+              <div id="doctor-fields-dash" style="display:none">
+                <div class="field">
+                  <label class="inputLabel" for="reg-specialization-dash">Specialization</label>
+                  <input id="reg-specialization-dash" type="text" placeholder="e.g. Cardiology" />
+                </div>
+                <div class="field">
+                  <label class="inputLabel" for="reg-schedule-dash">Schedule</label>
+                  <input id="reg-schedule-dash" type="text" placeholder="e.g. Mon-Fri, 8AM-5PM" />
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="inputLabel" for="reg-password-dash">Password</label>
+                <input id="reg-password-dash" type="password" placeholder="Min. 6 characters" required />
+                <div id="err-reg-password" class="field-error note hidden"></div>
+              </div>
+
+              <div class="field">
+                <label class="inputLabel" for="reg-confirm-password-dash">Confirm Password</label>
+                <input id="reg-confirm-password-dash" type="password" placeholder="Repeat your password" required />
+                <div id="err-reg-confirm" class="field-error note hidden"></div>
+              </div>
+
+              <div class="actions mt-14">
+                <button type="submit" class="btn">Register Personnel</button>
+              </div>
+              <div id="registration-msg" class="note hidden"></div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Registration Confirmation Modal -->
+  <div id="registration-confirm-modal" class="modal-overlay" style="display:none">
+    <div class="modal-content">
+      <h2 class="modal-title">Confirm Registration</h2>
+      <div class="modal-group"><label class="modal-label">Name</label>
+        <p id="confirm-name" class="modal-text"></p>
+      </div>
+      <div class="modal-group"><label class="modal-label">M.I.</label>
+        <p id="confirm-mi" class="modal-text"></p>
+      </div>
+      <div class="modal-group"><label class="modal-label">Email</label>
+        <p id="confirm-email" class="modal-text"></p>
+      </div>
+      <div class="modal-group"><label class="modal-label">Role</label>
+        <p id="confirm-role" class="modal-text"></p>
+      </div>
+      <div class="modal-group"><label class="modal-label">Contact</label>
+        <p id="confirm-contact" class="modal-text"></p>
+      </div>
+      <div class="modal-group"><label class="modal-label">Address</label>
+        <p id="confirm-address" class="modal-text"></p>
+      </div>
+      <div class="modal-group"><label class="modal-label">Birthday</label>
+        <p id="confirm-bday" class="modal-text"></p>
+      </div>
+      <div class="modal-actions">
+        <button id="confirm-register-btn" class="btn btn-confirm">Register</button>
+        <button id="confirm-cancel-btn" class="btn-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Registration Success Modal -->
+  <div id="registration-success-modal" class="modal-overlay" style="display:none">
+    <div class="modal-content">
+      <h2 class="modal-title">Registration Submitted</h2>
+      <p id="success-text" class="note">Your registration has been submitted and is pending approval.</p>
+      <div class="modal-actions">
+        <button id="success-close-btn" class="btn btn-confirm">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Action Confirmation Modal (global) -->
+  <div id="pending-action-confirm-modal" class="modal-overlay" style="display:none">
+    <div class="modal-content">
+      <h2 class="modal-title">Confirm Action</h2>
+      <p id="pending-action-text" class="modal-confirm-text"></p>
+      <div class="modal-actions">
+        <button id="pending-action-yes" class="btn btn-confirm">Confirm</button>
+        <button id="pending-action-no" class="btn-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account Details Modal -->
+  <div id="account-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2 id="modal-title" class="modal-title">Account Details</h2>
+      <div class="modal-grid">
+        <div class="modal-group">
+          <label class="modal-label">Name</label>
+          <p id="modal-name" class="modal-text"></p>
+        </div>
+
+        <div class="modal-group">
+          <label class="modal-label">M.I.</label>
+          <p id="modal-mi" class="modal-text"></p>
+        </div>
+
+        <div class="modal-group">
+          <label class="modal-label">Email</label>
+          <p id="modal-email" class="modal-text"></p>
+        </div>
+
+        <div class="modal-group">
+          <label class="modal-label">Role</label>
+          <p id="modal-role" class="modal-text"></p>
+        </div>
+
+        <div class="modal-group">
+          <label class="modal-label">Contact Number</label>
+          <p id="modal-contact" class="modal-text"></p>
+        </div>
+
+        <div class="modal-group">
+          <label class="modal-label">Address</label>
+          <p id="modal-address" class="modal-text"></p>
+        </div>
+
+        <div class="modal-group">
+          <label class="modal-label">Birthday</label>
+          <p id="modal-bday" class="modal-text"></p>
+        </div>
+
+        <div class="modal-group">
+          <label class="modal-label">Status</label>
+          <p id="modal-status" class="modal-text"></p>
+        </div>
+
+        <div class="modal-group">
+          <label class="modal-label">Password</label>
+          <p id="modal-password" class="modal-text"></p>
+        </div>
+      </div>
+
+      <div id="modal-actions" class="modal-actions">
+        <button id="modal-edit-btn" class="btn btn-confirm flex-1">Edit</button>
+        <button id="modal-delete-btn" class="btn-delete">Delete</button>
+        <button id="modal-close-btn" class="btn-close">Close</button>
+      </div>
+
+      <div id="modal-confirm-section" class="modal-confirm-section">
+        <p id="modal-confirm-text" class="modal-confirm-text"></p>
+        <div class="flex gap-12">
+          <button id="modal-confirm-btn" class="btn btn-confirm">Confirm</button>
+          <button id="modal-cancel-btn" class="btn-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/dashboard.js"></script>
+</body>
+
+</html>
