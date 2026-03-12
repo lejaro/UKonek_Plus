@@ -9,6 +9,9 @@ router.get('/', staffController.getAllStaff);
 // POST /api/staff/register - Register to pending_staff table
 router.post('/register', validateStaff, staffController.registerStaff);
 
+// GET /api/staff/verify-email - Verify email address
+router.get('/verify-email', staffController.verifyEmail);
+
 // POST /api/staff/register-direct - Register directly to staff table (Active)
 router.post('/register-direct', validateStaff, staffController.registerStaffDirect);
 

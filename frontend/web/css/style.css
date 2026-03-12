@@ -209,6 +209,143 @@ select:focus {
     font-weight: 600
 }
 
+.field-error {
+    font-size: 12px;
+    color: #dc2626;
+    margin-top: 4px;
+}
+
+.field-error.hidden {
+    display: none !important;
+}
+
+/* Modal Styling */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: opacity 0.2s ease;
+}
+
+.modal-overlay.hidden {
+    display: none !important;
+}
+
+.modal-box {
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-icon {
+    width: 60px;
+    height: 60px;
+    background: #10b981;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: white;
+    margin: 0 auto 20px;
+}
+
+.modal-heading {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 12px 0;
+}
+
+.modal-message {
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0 0 12px 0;
+}
+
+.modal-submessage {
+    font-size: 12px;
+    color: #94a3b8;
+    margin: 0 0 24px 0;
+}
+
+.modal-btn {
+    margin-top: 8px;
+}
+
+/* Schedule Days Styling */
+.schedule-days-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.day-pill {
+    position: relative;
+    cursor: pointer;
+}
+
+.day-pill input[type="checkbox"] {
+    display: none;
+}
+
+.day-pill span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 8px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: #f8f9fa;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.day-pill input[type="checkbox"]:checked + span {
+    background: #00277F;
+    color: #ffffff;
+    border-color: #00277F;
+    box-shadow: 0 2px 8px rgba(0, 39, 127, 0.2);
+}
+
+.day-pill:hover span {
+    border-color: #00277F;
+    background: #f0f4ff;
+}
+
+.day-pill input[type="checkbox"]:checked:hover + span {
+    background: #001a5e;
+    border-color: #001a5e;
+}
+
 @media(max-width: 420px) {
     .card {
         padding: 20px
@@ -611,7 +748,6 @@ select:focus {
 /* modal styles */
 
 .modal-overlay {
-    display: none;
     position: fixed;
     top: 0;
     left: 0;

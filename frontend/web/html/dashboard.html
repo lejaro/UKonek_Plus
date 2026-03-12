@@ -23,6 +23,8 @@
       <nav class="nav" aria-label="Main navigation">
         <a href="#" class="nav-item" data-section="dashboard"><span class="icon">🏠</span><span
             class="label">Dashboard</span></a>
+        <a href="#" class="nav-item" data-section="schedule"><span class="icon">📅</span><span
+            class="label">Schedule</span></a>
         <div class="nav-item dropdown">
           <button class="nav-btn" aria-label="Users menu"><span class="icon">👥</span><span
               class="label">Users</span><span class="arrow">▼</span></button>
@@ -168,8 +170,24 @@
                   <input id="reg-specialization-dash" type="text" placeholder="e.g. Cardiology" />
                 </div>
                 <div class="field">
-                  <label class="inputLabel" for="reg-schedule-dash">Schedule</label>
-                  <input id="reg-schedule-dash" type="text" placeholder="e.g. Mon-Fri, 8AM-5PM" />
+                  <label class="inputLabel">Schedule Days</label>
+                  <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px;">
+                    <label><input type="checkbox" name="schedule-day-dash" value="Monday"> Monday</label>
+                    <label><input type="checkbox" name="schedule-day-dash" value="Tuesday"> Tuesday</label>
+                    <label><input type="checkbox" name="schedule-day-dash" value="Wednesday"> Wednesday</label>
+                    <label><input type="checkbox" name="schedule-day-dash" value="Thursday"> Thursday</label>
+                    <label><input type="checkbox" name="schedule-day-dash" value="Friday"> Friday</label>
+                    <label><input type="checkbox" name="schedule-day-dash" value="Saturday"> Saturday</label>
+                    <label><input type="checkbox" name="schedule-day-dash" value="Sunday"> Sunday</label>
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="inputLabel" for="reg-schedule-start-dash">Start Hour (0-23)</label>
+                  <input id="reg-schedule-start-dash" type="number" min="0" max="23" placeholder="e.g. 8" />
+                </div>
+                <div class="field">
+                  <label class="inputLabel" for="reg-schedule-end-dash">End Hour (0-23)</label>
+                  <input id="reg-schedule-end-dash" type="number" min="0" max="23" placeholder="e.g. 17" />
                 </div>
               </div>
 
@@ -252,7 +270,7 @@
   </div>
 
   <!-- Account Details Modal -->
-  <div id="account-modal" class="modal-overlay">
+  <div id="account-modal" class="modal-overlay" style="display:none">
     <div class="modal-content">
       <h2 id="modal-title" class="modal-title">Account Details</h2>
       <div class="modal-grid">

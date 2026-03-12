@@ -46,6 +46,7 @@ function initializeDatabase() {
                 username VARCHAR(100) UNIQUE NOT NULL,
                 password_hash VARCHAR(255) NOT NULL,
                 employee_id VARCHAR(100) UNIQUE NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
                 role VARCHAR(100) NOT NULL,
                 specialization VARCHAR(255) DEFAULT NULL,
                 schedule VARCHAR(255) DEFAULT NULL,
@@ -60,9 +61,13 @@ function initializeDatabase() {
                 username VARCHAR(100) UNIQUE NOT NULL,
                 password_hash VARCHAR(255) NOT NULL,
                 employee_id VARCHAR(100) UNIQUE NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
                 role VARCHAR(100) NOT NULL,
                 specialization VARCHAR(255) DEFAULT NULL,
                 schedule VARCHAR(255) DEFAULT NULL,
+                email_verified TINYINT(1) DEFAULT 0,
+                verification_token VARCHAR(255) DEFAULT NULL,
+                token_expires_at DATETIME DEFAULT NULL,
                 status VARCHAR(50) DEFAULT 'Pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )

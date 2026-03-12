@@ -38,16 +38,36 @@ exports.validatePatient = (req, res, next) => {
 
 // Validate staff/medical personnel registration (New flow)
 exports.validateStaff = (req, res, next) => {
-    const { username, password, confirmPassword, employee_id, role, specialization, schedule } = req.body;
+    const { username, password, confirmPassword, employee_id, email, role, specialization, schedule } = req.body;
 
-    if (!username || !password || !confirmPassword || !employee_id || !role) {
-        return res.status(400).json({ message: "Username, Employee ID, Role, and Passwords are required" });
+    if (!username || !password || !confirmPassword || !employee_id || !email || !role) {
+        return res.status(400).json({ message: "Username, Employee ID, Email, Role, and Passwords are required" });
+    }
+
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
     }
 
     if (!validateCommonFields(req.body, res)) return;
 
     if (role === 'doctor' && (!specialization || !schedule)) {
         return res.status(400).json({ message: "Specialization and Schedule are required for Doctors" });
+    }
+
+    if (role === 'doctor' && schedule) {
+        // Validate schedule format
+        if (typeof schedule !== 'object' || !Array.isArray(schedule.days) || schedule.days.length === 0) {
+            return res.status(400).json({ message: "Schedule must have at least one working day" });
+        }
+        if (typeof schedule.startHour !== 'number' || typeof schedule.endHour !== 'number') {
+            return res.status(400).json({ message: "Start hour and end hour must be numbers" });
+        }
+        if (schedule.startHour < 0 || schedule.startHour > 23 || schedule.endHour < 0 || schedule.endHour > 23) {
+            return res.status(400).json({ message: "Hours must be between 0 and 23" });
+        }
+        if (schedule.startHour >= schedule.endHour) {
+            return res.status(400).json({ message: "End hour must be after start hour" });
+        }
     }
 
     next();
