@@ -34,6 +34,7 @@ class _uKonekRegisterPageState extends State<uKonekRegisterPage> {
 
   DateTime? selectedDate;
   String selectedCountryCode = "+63";
+  String selectedEmergencyCountryCode = "+63";
   String selectedSex = "Male";
 
   Future<void> pickDate() async {
@@ -81,6 +82,7 @@ class _uKonekRegisterPageState extends State<uKonekRegisterPage> {
       'email': emailController.text,
       'complete_address': addressController.text,
       'emergency_contact_complete_name': emergencyNameController.text,
+      'emergency_contact_country_code': selectedEmergencyCountryCode,
       'emergency_contact_contact_number': emergencyContactController.text,
       'relation': relationController.text,
       'password': passwordController.text,
@@ -269,7 +271,50 @@ class _uKonekRegisterPageState extends State<uKonekRegisterPage> {
                       const SizedBox(height: 15),
 
                       buildTextField("Complete Name", emergencyNameController, inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s\.\-]'))]),
-                      buildTextField("Contact Number", emergencyContactController, keyboardType: TextInputType.phone, inputFormatters: [FilteringTextInputFormatter.digitsOnly]),
+                      
+                      // EMERGENCY CONTACT NUMBER
+                      Row(
+                        children: [
+                          DropdownButton<String>(
+                            value: selectedEmergencyCountryCode,
+                            items: const [
+                              DropdownMenuItem(value: "+63", child: Text("+63 PH")),
+                              DropdownMenuItem(value: "+1", child: Text("+1 US")),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                selectedEmergencyCountryCode = value!;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextFormField(
+                              controller: emergencyContactController,
+                              keyboardType: TextInputType.phone,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(11),
+                              ],
+                              validator: (value) {
+                                if (value != null && value.isNotEmpty) {
+                                  if (value.length < 11) {
+                                    return "Emergency contact must be 11 digits";
+                                  }
+                                }
+                                return null;
+                              },
+                              decoration: const InputDecoration(
+                                labelText: "Emergency Contact Number",
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 15),
+                      
                       buildTextField("Relation", relationController, inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s\.\-]'))]),
 
                       const SizedBox(height: 30),
