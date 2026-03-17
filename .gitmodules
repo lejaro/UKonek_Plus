@@ -1,3 +1,6 @@
 [submodule "frontend/mobile/capstone1Ukonek"]
 	path = frontend/mobile/capstone1Ukonek
 	url = https://github.com/lianinyageana/capstone1Ukonek.git
+[submodule "frontend/mobile/ukonekmobile"]
+	path = frontend/mobile/ukonekmobile
+	url = https://github.com/lianinyageana/capstone1Ukonek.git
