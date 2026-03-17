@@ -1,1 +1,0 @@
-# UKonek Mobile Application
