@@ -119,6 +119,38 @@ function requirePageAuth(req, res, next) {
     return next();
 }
 
+function requireRole(...allowedRoles) {
+    const normalizedAllowedRoles = allowedRoles
+        .flat()
+        .map((role) => String(role || '').trim().toLowerCase())
+        .filter(Boolean);
+
+    return (req, res, next) => {
+        const currentRole = String(req.sessionUser?.role || '').trim().toLowerCase();
+        if (!currentRole || !normalizedAllowedRoles.includes(currentRole)) {
+            return res.status(403).json({ message: 'Forbidden: insufficient role privileges' });
+        }
+
+        return next();
+    };
+}
+
+function requirePageRole(...allowedRoles) {
+    const normalizedAllowedRoles = allowedRoles
+        .flat()
+        .map((role) => String(role || '').trim().toLowerCase())
+        .filter(Boolean);
+
+    return (req, res, next) => {
+        const currentRole = String(req.sessionUser?.role || '').trim().toLowerCase();
+        if (!currentRole || !normalizedAllowedRoles.includes(currentRole)) {
+            return res.redirect('/html/index.html');
+        }
+
+        return next();
+    };
+}
+
 module.exports = {
     SESSION_COOKIE_NAME,
     createSessionForUser,
@@ -127,5 +159,7 @@ module.exports = {
     clearSessionCookie,
     requireAuth,
     requirePageAuth,
+    requireRole,
+    requirePageRole,
     parseCookies
 };

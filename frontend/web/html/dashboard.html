@@ -25,7 +25,7 @@
         <p class="sidebar-section-label">Main</p>
 
         <nav class="nav" aria-label="Main navigation">
-          <a href="#" class="nav-item" data-section="dashboard" title="Dashboard">
+          <a href="#" class="nav-item admin-only" data-section="dashboard" title="Dashboard">
             <span class="nav-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11.5L12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/></svg>
             </span>
@@ -37,7 +37,7 @@
             </span>
             <span class="label">Schedule</span>
           </a>
-          <div class="nav-item dropdown">
+          <div class="nav-item dropdown admin-only">
             <button class="nav-btn" aria-label="Users menu" title="Users">
               <span class="nav-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="3"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a3 3 0 0 1 0 5.75"/></svg>
@@ -92,7 +92,7 @@
 
         <div class="topbar-right">
           <div class="user-info">
-            <div class="user-name">John Doe</div>
+            <div class="user-name">User</div>
             <div class="user-pos">Administrator</div>
           </div>
           <div class="profile-img" title="Profile"></div>
@@ -100,7 +100,7 @@
         </div>
       </div>
 
-      <section class="section-top" id="dashboard-section">
+      <section class="section-top admin-only" id="dashboard-section">
         <div class="dashboard-hero fade-in-up">
           <div>
             <p class="section-kicker">Operations Overview</p>
@@ -179,7 +179,7 @@
         </div>
       </section>
 
-      <section id="users-section" class="section-top hidden">
+      <section id="users-section" class="section-top hidden admin-only">
         <div id="account-management" class="hidden">
           <div class="management-shell">
             <div class="management-head">
@@ -257,6 +257,59 @@
               </table>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="non-admin-section" class="section-top hidden">
+        <div class="dashboard-hero fade-in-up">
+          <div>
+            <p class="section-kicker">Workspace Overview</p>
+            <h2 class="section-title" id="non-admin-title">Role Workspace</h2>
+            <p class="section-subtitle" id="non-admin-subtitle">You are signed in with a non-admin role.</p>
+          </div>
+        </div>
+
+        <div class="panel-grid">
+          <section class="panel fade-in-up" style="animation-delay: 0.05s;">
+            <div class="panel-head">
+              <h3>Your Access</h3>
+              <span class="panel-hint">Role-based permissions are active.</span>
+            </div>
+            <p class="section-subtitle" id="non-admin-permissions">Admin Command Center modules are restricted to admin accounts.</p>
+          </section>
+
+          <section class="panel fade-in-up" style="animation-delay: 0.08s;">
+            <div class="panel-head">
+              <h3>Account Details</h3>
+              <span class="panel-hint">Current signed-in profile</span>
+            </div>
+            <div class="table-wrap">
+              <table class="accounts-table compact-table">
+                <tbody>
+                  <tr>
+                    <th class="table-header-cell">Username</th>
+                    <td class="table-cell" id="non-admin-username">—</td>
+                  </tr>
+                  <tr>
+                    <th class="table-header-cell">Role</th>
+                    <td class="table-cell" id="non-admin-role">—</td>
+                  </tr>
+                  <tr>
+                    <th class="table-header-cell">Email</th>
+                    <td class="table-cell" id="non-admin-email">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <div class="panel fade-in-up" style="animation-delay: 0.12s;">
+          <div class="panel-head">
+            <h3>Admin Command Center</h3>
+            <span class="panel-hint">Restricted module</span>
+          </div>
+          <p class="section-subtitle">Only users with the Admin role can view and use admin account management and approval commands.</p>
         </div>
       </section>
     </main>

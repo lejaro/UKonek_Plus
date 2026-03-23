@@ -207,7 +207,7 @@ class _uKonekRegisterPageState extends State<uKonekRegisterPage> {
                       title: "Personal Information",
                       children: [
                         _styledField("First Name", firstNameController, Icons.badge_outlined, nameOnly: true),
-                        _styledField("Middle Name", middleNameController, Icons.badge_outlined, nameOnly: true),
+                        _styledField("Middle Name (Optional)", middleNameController, Icons.badge_outlined, nameOnly: true, isRequired: false),
                         _styledField("Surname", surnameController, Icons.badge_outlined, nameOnly: true),
                         _datePicker(),
                         _styledField("Age", ageController, Icons.cake_outlined, enabled: false),
@@ -283,6 +283,7 @@ class _uKonekRegisterPageState extends State<uKonekRegisterPage> {
     bool enabled = true,
     bool nameOnly = false,
     bool numberOnly = false,
+    bool isRequired = true,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -295,7 +296,8 @@ class _uKonekRegisterPageState extends State<uKonekRegisterPage> {
           if (numberOnly) FilteringTextInputFormatter.digitsOnly,
         ],
         validator: (v) {
-          if (v == null || v.trim().isEmpty) return "$label is required";
+          if ((v == null || v.trim().isEmpty) && isRequired) return "$label is required";
+          if ((v == null || v.trim().isEmpty) && !isRequired) return null;
           if (nameOnly && !RegExp(r"^[A-Za-z]+(?:[ '-][A-Za-z]+)*$").hasMatch(v.trim())) {
             return "$label must not contain numbers";
           }

@@ -2,7 +2,7 @@ const db = require('../config/db');
 const crypto = require('crypto');
 const { hashPassword, comparePassword } = require('../utils/auth');
 const { handleDbError } = require('../utils/dbHelpers');
-const { sendStaffVerificationEmail, sendStaffApprovalEmail, sendStaffPasswordResetEmail } = require('../utils/email');
+const { sendStaffRegistrationOtpEmail, sendStaffApprovalEmail, sendStaffPasswordResetEmail } = require('../utils/email');
 const {
     createSessionForUser,
     destroySession,
@@ -18,6 +18,20 @@ let staffProfileSchemaReady = false;
 
 const nameRegex = /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/;
 const numericRegex = /^\d+$/;
+const STAFF_REG_OTP_EXPIRY_MINUTES = Number.parseInt(process.env.STAFF_REG_OTP_EXPIRY_MINUTES || '10', 10);
+const STAFF_REG_OTP_MAX_ATTEMPTS = Number.parseInt(process.env.STAFF_REG_OTP_MAX_ATTEMPTS || '5', 10);
+const STAFF_RESET_OTP_EXPIRY_MINUTES = Number.parseInt(process.env.STAFF_RESET_OTP_EXPIRY_MINUTES || '10', 10);
+const STAFF_RESET_OTP_MAX_ATTEMPTS = Number.parseInt(process.env.STAFF_RESET_OTP_MAX_ATTEMPTS || '5', 10);
+
+function hashOtp(otp) {
+    return crypto.createHash('sha256').update(String(otp)).digest('hex');
+}
+
+function generateOtpCode() {
+    const min = 100000;
+    const max = 999999;
+    return String(Math.floor(Math.random() * (max - min + 1)) + min);
+}
 
 async function ensureStaffEmailVerificationTable() {
     if (staffEmailVerificationTableReady) {
@@ -65,11 +79,14 @@ async function ensureStaffPasswordResetSchema() {
     const existing = new Set(columns.map((column) => column.COLUMN_NAME));
     const alterStatements = [];
 
-    if (!existing.has('password_reset_token_hash')) {
-        alterStatements.push("ADD COLUMN password_reset_token_hash VARCHAR(64) NULL");
+    if (!existing.has('password_reset_otp_hash')) {
+        alterStatements.push('ADD COLUMN password_reset_otp_hash VARCHAR(64) NULL');
     }
-    if (!existing.has('password_reset_token_expires')) {
-        alterStatements.push("ADD COLUMN password_reset_token_expires DATETIME NULL");
+    if (!existing.has('password_reset_otp_expires')) {
+        alterStatements.push('ADD COLUMN password_reset_otp_expires DATETIME NULL');
+    }
+    if (!existing.has('password_reset_otp_attempts_left')) {
+        alterStatements.push(`ADD COLUMN password_reset_otp_attempts_left INT NOT NULL DEFAULT ${STAFF_RESET_OTP_MAX_ATTEMPTS}`);
     }
 
     if (alterStatements.length > 0) {
@@ -109,7 +126,9 @@ async function ensureStaffProfileSchema() {
             gender: "ADD COLUMN gender VARCHAR(20) NOT NULL DEFAULT 'Unspecified'",
             username: 'ADD COLUMN username VARCHAR(100) NULL',
             password_hash: 'ADD COLUMN password_hash VARCHAR(255) NULL',
-            consent_given: 'ADD COLUMN consent_given TINYINT(1) NOT NULL DEFAULT 0'
+            consent_given: 'ADD COLUMN consent_given TINYINT(1) NOT NULL DEFAULT 0',
+            attempts_left: `ADD COLUMN attempts_left INT NOT NULL DEFAULT ${STAFF_REG_OTP_MAX_ATTEMPTS}`,
+            consumed: 'ADD COLUMN consumed TINYINT(1) NOT NULL DEFAULT 0'
         }
     };
 
@@ -441,7 +460,7 @@ function renderAccountSetupPage({ token, firstName = '', lastName = '', role = '
     `;
 }
 
-// Register staff profile first, then send email verification link.
+// Register staff profile first, then send OTP for email verification.
 exports.registerStaff = async (req, res) => {
     const connection = await db.getConnection();
     let transactionStarted = false;
@@ -460,16 +479,16 @@ exports.registerStaff = async (req, res) => {
             role
         } = req.body;
 
-        if (!first_name || !middle_name || !last_name || !birthday || !gender || !employee_id || !email || !role) {
+        if (!first_name || !last_name || !birthday || !gender || !employee_id || !email || !role) {
             return res.status(400).json({
-                message: 'First name, middle name, last name, birthday, gender, employee ID, email, and role are required'
+                message: 'First name, last name, birthday, gender, employee ID, email, and role are required'
             });
         }
 
         const normalizedEmail = String(email).trim().toLowerCase();
         const normalizedGender = String(gender).trim();
         const normalizedFirstName = String(first_name).trim();
-        const normalizedMiddleName = String(middle_name).trim();
+        const normalizedMiddleName = String(middle_name || '').trim();
         const normalizedLastName = String(last_name).trim();
         const normalizedEmployeeId = String(employee_id).trim();
 
@@ -477,8 +496,12 @@ exports.registerStaff = async (req, res) => {
             return res.status(400).json({ message: 'Invalid email format' });
         }
 
-        if (!nameRegex.test(normalizedFirstName) || !nameRegex.test(normalizedMiddleName) || !nameRegex.test(normalizedLastName)) {
-            return res.status(400).json({ message: 'First, middle, and last name must contain letters only' });
+        if (!nameRegex.test(normalizedFirstName) || !nameRegex.test(normalizedLastName)) {
+            return res.status(400).json({ message: 'First and last name must contain letters only' });
+        }
+
+        if (normalizedMiddleName && !nameRegex.test(normalizedMiddleName)) {
+            return res.status(400).json({ message: 'Middle name must contain letters only if provided' });
         }
 
         if (!numericRegex.test(normalizedEmployeeId)) {
@@ -496,9 +519,9 @@ exports.registerStaff = async (req, res) => {
             [normalizedEmployeeId, normalizedEmail]
         );
 
-        // Check staged registrations waiting for email verification.
+        // Check staged registrations waiting for OTP verification.
         const [existingStaged] = await connection.query(
-            "SELECT id FROM staff_email_verifications WHERE employee_id = ? OR email = ?",
+            "SELECT id, employee_id, email FROM staff_email_verifications WHERE employee_id = ? OR email = ?",
             [normalizedEmployeeId, normalizedEmail]
         );
 
@@ -508,61 +531,105 @@ exports.registerStaff = async (req, res) => {
         if (existingPending.length > 0) {
             return res.status(400).json({ message: "Employee ID or Email already pending approval" });
         }
-        if (existingStaged.length > 0) {
-            return res.status(400).json({ message: "Registration already submitted. Please verify your email." });
-        }
-
-        const { token, tokenHash, expiresAt } = createVerificationTokenPayload();
+        const otp = generateOtpCode();
+        const otpHash = hashOtp(otp);
+        const expiresAt = new Date(Date.now() + STAFF_REG_OTP_EXPIRY_MINUTES * 60 * 1000);
 
         await connection.beginTransaction();
         transactionStarted = true;
 
-        // Stage profile data until email is verified and credentials are created.
-        const sql = `
-            INSERT INTO staff_email_verifications (
-                first_name,
-                middle_name,
-                last_name,
+        if (existingStaged.length > 0) {
+            const duplicateByOtherEmailOrEmployee = existingStaged.some((row) =>
+                (row.email === normalizedEmail && row.employee_id !== normalizedEmployeeId) ||
+                (row.employee_id === normalizedEmployeeId && row.email !== normalizedEmail)
+            );
+
+            if (duplicateByOtherEmailOrEmployee) {
+                return res.status(400).json({ message: 'Employee ID or Email already has a pending verification request' });
+            }
+
+            await connection.query(
+                `
+                    UPDATE staff_email_verifications
+                    SET first_name = ?,
+                        middle_name = ?,
+                        last_name = ?,
+                        birthday = ?,
+                        gender = ?,
+                        employee_id = ?,
+                        email = ?,
+                        role = ?,
+                        verification_token_hash = ?,
+                        verification_token_expires = ?,
+                        attempts_left = ?,
+                        consumed = 0,
+                        username = NULL,
+                        password_hash = NULL,
+                        consent_given = 0
+                    WHERE email = ?
+                `,
+                [
+                    normalizedFirstName,
+                    normalizedMiddleName,
+                    normalizedLastName,
+                    birthday,
+                    normalizedGender,
+                    normalizedEmployeeId,
+                    normalizedEmail,
+                    role,
+                    otpHash,
+                    expiresAt,
+                    STAFF_REG_OTP_MAX_ATTEMPTS,
+                    normalizedEmail
+                ]
+            );
+        } else {
+            const sql = `
+                INSERT INTO staff_email_verifications (
+                    first_name,
+                    middle_name,
+                    last_name,
+                    birthday,
+                    gender,
+                    employee_id,
+                    email,
+                    role,
+                    verification_token_hash,
+                    verification_token_expires,
+                    attempts_left,
+                    consumed
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            `;
+
+            const params = [
+                normalizedFirstName,
+                normalizedMiddleName,
+                normalizedLastName,
                 birthday,
-                gender,
-                employee_id,
-                email,
+                normalizedGender,
+                normalizedEmployeeId,
+                normalizedEmail,
                 role,
-                verification_token_hash,
-                verification_token_expires
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
+                otpHash,
+                expiresAt,
+                STAFF_REG_OTP_MAX_ATTEMPTS
+            ];
 
-        const params = [
-            normalizedFirstName,
-            normalizedMiddleName,
-            normalizedLastName,
-            birthday,
-            normalizedGender,
-            normalizedEmployeeId,
-            normalizedEmail,
-            role,
-            tokenHash,
-            expiresAt
-        ];
+            await connection.query(sql, params);
+        }
 
-        await connection.query(sql, params);
-
-        const backendBaseUrl = process.env.BACKEND_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-        const verificationUrl = `${backendBaseUrl}/api/staff/verify-email?token=${token}`;
-
-        await sendStaffVerificationEmail({
+        await sendStaffRegistrationOtpEmail({
             to: normalizedEmail,
-            username: `${normalizedFirstName} ${normalizedLastName}`,
-            verificationUrl,
-            expiresHours: 24
+            firstName: normalizedFirstName,
+            otp,
+            expiresMinutes: STAFF_REG_OTP_EXPIRY_MINUTES
         });
 
         await connection.commit();
         transactionStarted = false;
-        res.status(201).json({
-            message: "Registration submitted. Please verify your email to complete your request for admin approval."
+        res.status(200).json({
+            message: 'OTP sent to your email. Enter the OTP to complete account setup and request admin approval.'
         });
 
     } catch (error) {
@@ -897,10 +964,10 @@ exports.completeStaffRegistration = async (req, res) => {
         await ensureStaffEmailVerificationTable();
         await ensureStaffProfileSchema();
 
-        const { token, username, password, confirmPassword, consentGiven } = req.body;
+        const { email, otp, username, password, confirmPassword, consentGiven } = req.body;
 
-        if (!token || !username || !password || !confirmPassword) {
-            return res.status(400).json({ message: 'Token, username, password, and confirm password are required' });
+        if (!email || !otp || !username || !password || !confirmPassword) {
+            return res.status(400).json({ message: 'Email, OTP, username, password, and confirm password are required' });
         }
 
         if (password !== confirmPassword) {
@@ -916,24 +983,52 @@ exports.completeStaffRegistration = async (req, res) => {
         }
 
         const normalizedUsername = String(username).trim();
-        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+        const normalizedEmail = String(email).trim().toLowerCase();
+        const otpHash = hashOtp(String(otp).trim());
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            return res.status(400).json({ message: 'Invalid email format' });
+        }
+
+        if (!/^\d{6}$/.test(String(otp).trim())) {
+            return res.status(400).json({ message: 'A valid 6-digit OTP is required' });
+        }
 
         const [stagedRows] = await connection.query(
             `
                 SELECT *
                 FROM staff_email_verifications
-                WHERE verification_token_hash = ?
-                  AND verification_token_expires > NOW()
+                WHERE email = ?
+                  AND consumed = 0
                 LIMIT 1
             `,
-            [tokenHash]
+            [normalizedEmail]
         );
 
         if (stagedRows.length === 0) {
-            return res.status(400).json({ message: 'Verification token is invalid or expired' });
+            return res.status(400).json({ message: 'No active OTP found. Please request a new OTP.' });
         }
 
         const staged = stagedRows[0];
+
+        const expiresAt = new Date(staged.verification_token_expires);
+        if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()) {
+            await connection.query('UPDATE staff_email_verifications SET consumed = 1 WHERE id = ?', [staged.id]);
+            return res.status(400).json({ message: 'OTP is expired. Please request a new OTP.' });
+        }
+
+        if (Number(staged.attempts_left || 0) <= 0) {
+            await connection.query('UPDATE staff_email_verifications SET consumed = 1 WHERE id = ?', [staged.id]);
+            return res.status(400).json({ message: 'OTP attempts exceeded. Please request a new OTP.' });
+        }
+
+        if (String(staged.verification_token_hash || '') !== otpHash) {
+            await connection.query(
+                'UPDATE staff_email_verifications SET attempts_left = attempts_left - 1 WHERE id = ? AND attempts_left > 0',
+                [staged.id]
+            );
+            return res.status(400).json({ message: 'Invalid OTP code' });
+        }
 
         const [usernameTakenInStaff] = await connection.query(
             'SELECT id FROM staff WHERE username = ? LIMIT 1',
@@ -1072,6 +1167,9 @@ exports.loginStaff = async (req, res) => {
         const { password_hash, ...userInfo } = user;
         const sessionId = createSessionForUser({
             id: userInfo.id,
+            first_name: userInfo.first_name,
+            middle_name: userInfo.middle_name,
+            last_name: userInfo.last_name,
             username: userInfo.username,
             role: userInfo.role,
             email: userInfo.email
@@ -1104,7 +1202,7 @@ exports.getSession = async (req, res) => {
     });
 };
 
-// Request password reset link
+// Request password reset OTP
 exports.forgotPassword = async (req, res) => {
     try {
         await ensureStaffPasswordResetSchema();
@@ -1116,12 +1214,12 @@ exports.forgotPassword = async (req, res) => {
 
         // Always return generic message to prevent account enumeration.
         const genericResponse = {
-            message: 'If an account exists for that email, a password reset link has been sent.'
+            message: 'If an account exists for that email, a password reset OTP has been sent.'
         };
 
         const [users] = await db.query(
             'SELECT id, username, email FROM staff WHERE email = ? LIMIT 1',
-            [email]
+            [String(email).trim().toLowerCase()]
         );
 
         if (users.length === 0) {
@@ -1129,29 +1227,27 @@ exports.forgotPassword = async (req, res) => {
         }
 
         const user = users[0];
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
-        const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+        const resetOtp = generateOtpCode();
+        const resetOtpHash = hashOtp(resetOtp);
+        const expiresAt = new Date(Date.now() + STAFF_RESET_OTP_EXPIRY_MINUTES * 60 * 1000);
 
         await db.query(
             `
                 UPDATE staff
-                SET password_reset_token_hash = ?, password_reset_token_expires = ?
+                SET
+                    password_reset_otp_hash = ?,
+                    password_reset_otp_expires = ?,
+                    password_reset_otp_attempts_left = ?
                 WHERE id = ?
             `,
-            [resetTokenHash, expiresAt, user.id]
+            [resetOtpHash, expiresAt, STAFF_RESET_OTP_MAX_ATTEMPTS, user.id]
         );
-
-        const backendBaseUrl = process.env.BACKEND_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-        const resetBaseUrl = process.env.FRONTEND_RESET_URL || `${backendBaseUrl}/html/reset-password.html`;
-        const separator = resetBaseUrl.includes('?') ? '&' : '?';
-        const resetUrl = `${resetBaseUrl}${separator}token=${encodeURIComponent(resetToken)}`;
 
         await sendStaffPasswordResetEmail({
             to: user.email,
             username: user.username,
-            resetUrl,
-            expiresMinutes: 60
+            otp: resetOtp,
+            expiresMinutes: STAFF_RESET_OTP_EXPIRY_MINUTES
         });
 
         return res.status(200).json(genericResponse);
@@ -1161,15 +1257,15 @@ exports.forgotPassword = async (req, res) => {
     }
 };
 
-// Reset password using token
+// Reset password using OTP
 exports.resetPassword = async (req, res) => {
     try {
         await ensureStaffPasswordResetSchema();
 
-        const { token, password, confirmPassword } = req.body;
+        const { email, otp, password, confirmPassword } = req.body;
 
-        if (!token || !password || !confirmPassword) {
-            return res.status(400).json({ message: 'Token, password, and confirm password are required' });
+        if (!email || !otp || !password || !confirmPassword) {
+            return res.status(400).json({ message: 'Email, OTP, password, and confirm password are required' });
         }
 
         if (password !== confirmPassword) {
@@ -1180,22 +1276,72 @@ exports.resetPassword = async (req, res) => {
             return res.status(400).json({ message: 'Password must be at least 6 characters' });
         }
 
-        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+        const normalizedEmail = String(email).trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            return res.status(400).json({ message: 'A valid email is required' });
+        }
+
+        if (!/^\d{6}$/.test(String(otp).trim())) {
+            return res.status(400).json({ message: 'A valid 6-digit OTP is required' });
+        }
+
+        const otpHash = hashOtp(String(otp).trim());
 
         const [users] = await db.query(
             `
-                SELECT id
+                SELECT id, password_reset_otp_hash, password_reset_otp_expires, password_reset_otp_attempts_left
                 FROM staff
-                WHERE password_reset_token_hash = ?
-                  AND password_reset_token_expires IS NOT NULL
-                  AND password_reset_token_expires > NOW()
+                WHERE email = ?
                 LIMIT 1
             `,
-            [tokenHash]
+            [normalizedEmail]
         );
 
         if (users.length === 0) {
-            return res.status(400).json({ message: 'Reset token is invalid or expired' });
+            return res.status(400).json({ message: 'Invalid OTP or email' });
+        }
+
+        const user = users[0];
+
+        if (!user.password_reset_otp_hash || !user.password_reset_otp_expires) {
+            return res.status(400).json({ message: 'No active OTP found. Please request a new OTP.' });
+        }
+
+        const expiresAt = new Date(user.password_reset_otp_expires);
+        if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()) {
+            await db.query(
+                `
+                    UPDATE staff
+                    SET password_reset_otp_hash = NULL,
+                        password_reset_otp_expires = NULL,
+                        password_reset_otp_attempts_left = ?
+                    WHERE id = ?
+                `,
+                [STAFF_RESET_OTP_MAX_ATTEMPTS, user.id]
+            );
+            return res.status(400).json({ message: 'OTP is expired. Please request a new OTP.' });
+        }
+
+        if (Number(user.password_reset_otp_attempts_left || 0) <= 0) {
+            await db.query(
+                `
+                    UPDATE staff
+                    SET password_reset_otp_hash = NULL,
+                        password_reset_otp_expires = NULL,
+                        password_reset_otp_attempts_left = ?
+                    WHERE id = ?
+                `,
+                [STAFF_RESET_OTP_MAX_ATTEMPTS, user.id]
+            );
+            return res.status(400).json({ message: 'OTP attempts exceeded. Please request a new OTP.' });
+        }
+
+        if (user.password_reset_otp_hash !== otpHash) {
+            await db.query(
+                'UPDATE staff SET password_reset_otp_attempts_left = password_reset_otp_attempts_left - 1 WHERE id = ? AND password_reset_otp_attempts_left > 0',
+                [user.id]
+            );
+            return res.status(400).json({ message: 'Invalid OTP code' });
         }
 
         const passwordHash = await hashPassword(password);
@@ -1205,11 +1351,12 @@ exports.resetPassword = async (req, res) => {
                 UPDATE staff
                 SET
                     password_hash = ?,
-                    password_reset_token_hash = NULL,
-                    password_reset_token_expires = NULL
+                    password_reset_otp_hash = NULL,
+                    password_reset_otp_expires = NULL,
+                    password_reset_otp_attempts_left = ?
                 WHERE id = ?
             `,
-            [passwordHash, users[0].id]
+            [passwordHash, STAFF_RESET_OTP_MAX_ATTEMPTS, user.id]
         );
 
         return res.status(200).json({ message: 'Password reset successful. You can now log in.' });

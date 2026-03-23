@@ -79,6 +79,41 @@ exports.sendStaffVerificationEmail = async ({ to, username, verificationUrl, exp
 	});
 };
 
+exports.sendStaffRegistrationOtpEmail = async ({ to, firstName, otp, expiresMinutes = 10 }) => {
+	const transporter = getSmtpTransport();
+	const from = process.env.SMTP_FROM || process.env.SMTP_USER;
+	const appName = process.env.APP_NAME || 'uKonek Plus';
+	const safeName = String(firstName || '').trim() || 'Staff Member';
+
+	const subject = `${appName}: Your staff registration OTP`;
+	const text = [
+		`Hello ${safeName},`,
+		'',
+		`Your one-time passcode for staff registration is: ${otp}`,
+		`This code expires in ${expiresMinutes} minutes.`,
+		'',
+		'If you did not request this, you can ignore this message.'
+	].join('\n');
+
+	const html = `
+		<div style="font-family: Arial, sans-serif; line-height: 1.5; color: #1f2937;">
+			<p>Hello <strong>${safeName}</strong>,</p>
+			<p>Your one-time passcode for staff registration is:</p>
+			<p style="font-size: 28px; font-weight: 700; letter-spacing: 4px; margin: 10px 0;">${otp}</p>
+			<p>This code expires in ${expiresMinutes} minutes.</p>
+			<p>If you did not request this, you can ignore this message.</p>
+		</div>
+	`;
+
+	await transporter.sendMail({
+		from,
+		to,
+		subject,
+		text,
+		html
+	});
+};
+
 exports.sendStaffApprovalEmail = async ({ to, username, role }) => {
 	const transporter = getSmtpTransport();
 	const from = process.env.SMTP_FROM || process.env.SMTP_USER;
@@ -127,18 +162,18 @@ exports.sendStaffApprovalEmail = async ({ to, username, role }) => {
 	});
 };
 
-exports.sendStaffPasswordResetEmail = async ({ to, username, resetUrl, expiresMinutes = 60 }) => {
+exports.sendStaffPasswordResetEmail = async ({ to, username, otp, expiresMinutes = 10 }) => {
 	const transporter = getSmtpTransport();
 	const from = process.env.SMTP_FROM || process.env.SMTP_USER;
 	const appName = process.env.APP_NAME || 'uKonek Plus';
 
-	const subject = `${appName}: Reset your password`;
+	const subject = `${appName}: Your password reset OTP`;
 	const text = [
 		`Hello ${username},`,
 		'',
 		`We received a request to reset your password for ${appName}.`,
-		`Open this link to set a new password (valid for ${expiresMinutes} minutes):`,
-		resetUrl,
+		`Your one-time passcode is: ${otp}`,
+		`This code is valid for ${expiresMinutes} minutes.`,
 		'',
 		'If you did not request this, you can ignore this email.'
 	].join('\n');
@@ -147,17 +182,9 @@ exports.sendStaffPasswordResetEmail = async ({ to, username, resetUrl, expiresMi
 		<div style="font-family: Arial, sans-serif; line-height: 1.5; color: #1f2937;">
 			<p>Hello <strong>${username}</strong>,</p>
 			<p>We received a request to reset your password for <strong>${appName}</strong>.</p>
-			<p>This link is valid for ${expiresMinutes} minutes.</p>
-			<p>
-				<a
-					href="${resetUrl}"
-					style="display: inline-block; background: #1d4ed8; color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 6px;"
-				>
-					Reset Password
-				</a>
-			</p>
-			<p>If the button does not work, copy and paste this URL into your browser:</p>
-			<p><a href="${resetUrl}">${resetUrl}</a></p>
+			<p>Your one-time passcode is:</p>
+			<p style="font-size: 28px; font-weight: 700; letter-spacing: 4px; margin: 10px 0;">${otp}</p>
+			<p>This code is valid for ${expiresMinutes} minutes.</p>
 			<p>If you did not request this, you can ignore this email.</p>
 		</div>
 	`;

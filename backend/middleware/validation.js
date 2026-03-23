@@ -202,10 +202,18 @@ exports.validatePatientResetPassword = (req, res, next) => {
 };
 
 exports.validateResetPassword = (req, res, next) => {
-    const { token, password, confirmPassword } = req.body;
+    const { email, otp, password, confirmPassword } = req.body;
 
-    if (!token || !password || !confirmPassword) {
-        return res.status(400).json({ message: 'Token, password, and confirm password are required' });
+    if (!email || !emailRegex.test(String(email).trim())) {
+        return res.status(400).json({ message: 'A valid email is required' });
+    }
+
+    if (!otp || !/^\d{6}$/.test(String(otp).trim())) {
+        return res.status(400).json({ message: 'A valid 6-digit OTP is required' });
+    }
+
+    if (!password || !confirmPassword) {
+        return res.status(400).json({ message: 'Password and confirm password are required' });
     }
 
     if (password !== confirmPassword) {

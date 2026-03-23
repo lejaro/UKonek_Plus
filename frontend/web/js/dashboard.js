@@ -130,14 +130,99 @@ async function ensureAuthenticatedSession() {
 
     if (!response.ok) {
       window.location.replace('/html/index.html');
-      return false;
+      return null;
     }
-    return true;
+
+    const sessionData = await response.json().catch(() => null);
+    return sessionData?.user || null;
   } catch (error) {
     console.error('Session check failed:', error);
     window.location.replace('/html/index.html');
-    return false;
+    return null;
   }
+}
+
+function isAdminUser(user) {
+  return String(user?.role || '').trim().toLowerCase() === 'admin';
+}
+
+function toTitleCase(value) {
+  const lower = String(value || '').trim().toLowerCase();
+  if (!lower) return 'Unknown';
+  return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
+function getDisplayFirstName(user) {
+  const preferred =
+    user?.first_name ||
+    user?.firstName ||
+    user?.firstname;
+
+  if (preferred && String(preferred).trim()) {
+    return String(preferred).trim();
+  }
+
+  return String(user?.username || '').trim() || 'User';
+}
+
+function updateNonAdminWorkspace(user) {
+  const role = String(user?.role || '').trim().toLowerCase();
+  const roleTitle = toTitleCase(role);
+
+  const titleNode = document.getElementById('non-admin-title');
+  if (titleNode) titleNode.textContent = `${roleTitle} Workspace`;
+
+  const subtitleNode = document.getElementById('non-admin-subtitle');
+  if (subtitleNode) {
+    subtitleNode.textContent = role === 'doctor'
+      ? 'Track your daily clinical tasks and coordinate with the admin team for account-related requests.'
+      : 'Track your daily operations and coordinate with the admin team for account-related requests.';
+  }
+
+  const permissionsNode = document.getElementById('non-admin-permissions');
+  if (permissionsNode) {
+    permissionsNode.textContent = 'Admin Command Center modules are restricted to admin accounts. Your role can continue using non-admin workspace functions.';
+  }
+
+  const usernameNode = document.getElementById('non-admin-username');
+  if (usernameNode) usernameNode.textContent = user?.username || '—';
+
+  const roleNode = document.getElementById('non-admin-role');
+  if (roleNode) roleNode.textContent = roleTitle;
+
+  const emailNode = document.getElementById('non-admin-email');
+  if (emailNode) emailNode.textContent = user?.email || '—';
+}
+
+function applyRoleAccess(user) {
+  const adminAccess = isAdminUser(user);
+  if (!adminAccess) {
+    document.querySelectorAll('.admin-only').forEach((element) => {
+      element.classList.add('hidden');
+    });
+  }
+
+  const userNameNode = document.querySelector('.user-name');
+  if (userNameNode) {
+    userNameNode.textContent = getDisplayFirstName(user);
+  }
+
+  const userRoleNode = document.querySelector('.user-pos');
+  if (userRoleNode) {
+    const roleText = String(user?.role || 'Staff');
+    userRoleNode.textContent = roleText.charAt(0).toUpperCase() + roleText.slice(1);
+  }
+
+  const nonAdminSection = document.getElementById('non-admin-section');
+  if (adminAccess) {
+    if (nonAdminSection) nonAdminSection.classList.add('hidden');
+    return;
+  }
+
+  hideAllSections();
+  clearActiveNav();
+  updateNonAdminWorkspace(user);
+  if (nonAdminSection) nonAdminSection.classList.remove('hidden');
 }
 
 window.addEventListener('pageshow', async (event) => {
@@ -148,7 +233,10 @@ window.addEventListener('pageshow', async (event) => {
     return;
   }
 
-  await ensureAuthenticatedSession();
+  const sessionUser = await ensureAuthenticatedSession();
+  if (sessionUser) {
+    applyRoleAccess(sessionUser);
+  }
 });
 
 // Search input handler
@@ -197,6 +285,8 @@ function hideAllSections() {
   // .hidden has !important so inline styles would lose to it
   if (dashboardSection) dashboardSection.classList.add('hidden');
   if (usersSection) usersSection.classList.add('hidden');
+  const nonAdminSection = document.getElementById('non-admin-section');
+  if (nonAdminSection) nonAdminSection.classList.add('hidden');
   // Hide all subsections
   const accountMgmt = document.getElementById('account-management');
   if (accountMgmt) accountMgmt.classList.add('hidden');
@@ -235,7 +325,7 @@ dropdownItems.forEach(item => {
 });
 
 const dashboardLink = document.querySelector('.nav-item[data-section="dashboard"]');
-if (dashboardLink) {
+if (dashboardLink && !dashboardLink.classList.contains('hidden')) {
   dashboardLink.classList.add('is-active');
 }
 
@@ -373,8 +463,17 @@ async function loadPendingStaffData() {
 
 // Initial load (after auth check)
 async function initDashboardData() {
-  const isAuthenticated = await ensureAuthenticatedSession();
-  if (!isAuthenticated) return;
+  const sessionUser = await ensureAuthenticatedSession();
+  if (!sessionUser) return;
+
+  applyRoleAccess(sessionUser);
+
+  if (!isAdminUser(sessionUser)) {
+    return;
+  }
+
+  if (dashboardSection) dashboardSection.classList.remove('hidden');
+  if (dashboardLink) dashboardLink.classList.add('is-active');
   await Promise.all([loadStaffData(), loadPendingStaffData()]);
 }
 
